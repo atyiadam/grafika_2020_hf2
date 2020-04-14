@@ -7,7 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		06D8645D2444B44B0003BE63 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 06D8645C2444B44B0003BE63 /* main.cpp */; };
+		06D864652444B4DF0003BE63 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 06D864642444B4DF0003BE63 /* GLUT.framework */; };
+		06D864672444B4E50003BE63 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 06D864662444B4E50003BE63 /* OpenGL.framework */; };
+		06D8646E2444B5F00003BE63 /* framework.cp in Sources */ = {isa = PBXBuildFile; fileRef = 06D8646D2444B5F00003BE63 /* framework.cp */; };
+		06D864702444B5F80003BE63 /* raytrace.cp in Sources */ = {isa = PBXBuildFile; fileRef = 06D8646F2444B5F80003BE63 /* raytrace.cp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +27,11 @@
 
 /* Begin PBXFileReference section */
 		06D864592444B44B0003BE63 /* grafika_2020_hf2 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = grafika_2020_hf2; sourceTree = BUILT_PRODUCTS_DIR; };
-		06D8645C2444B44B0003BE63 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		06D864642444B4DF0003BE63 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		06D864662444B4E50003BE63 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		06D864682444B5C80003BE63 /* framework.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = framework.h; sourceTree = "<group>"; };
+		06D8646D2444B5F00003BE63 /* framework.cp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = framework.cp; path = ../../../Desktop/framework.cp; sourceTree = "<group>"; };
+		06D8646F2444B5F80003BE63 /* raytrace.cp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = raytrace.cp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +39,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				06D864652444B4DF0003BE63 /* GLUT.framework in Frameworks */,
+				06D864672444B4E50003BE63 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +52,7 @@
 			children = (
 				06D8645B2444B44B0003BE63 /* grafika_2020_hf2 */,
 				06D8645A2444B44B0003BE63 /* Products */,
+				06D864632444B4DF0003BE63 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +67,20 @@
 		06D8645B2444B44B0003BE63 /* grafika_2020_hf2 */ = {
 			isa = PBXGroup;
 			children = (
-				06D8645C2444B44B0003BE63 /* main.cpp */,
+				06D8646F2444B5F80003BE63 /* raytrace.cp */,
+				06D8646D2444B5F00003BE63 /* framework.cp */,
+				06D864682444B5C80003BE63 /* framework.h */,
 			);
 			path = grafika_2020_hf2;
+			sourceTree = "<group>";
+		};
+		06D864632444B4DF0003BE63 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				06D864662444B4E50003BE63 /* OpenGL.framework */,
+				06D864642444B4DF0003BE63 /* GLUT.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -119,7 +140,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				06D8645D2444B44B0003BE63 /* main.cpp in Sources */,
+				06D8646E2444B5F00003BE63 /* framework.cp in Sources */,
+				06D864702444B5F80003BE63 /* raytrace.cp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
