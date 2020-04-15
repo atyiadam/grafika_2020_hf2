@@ -29,7 +29,7 @@ vec3 operator/(vec3 num, vec3 denom) {
 struct ReflectiveMaterial : Material {
     ReflectiveMaterial(vec3 n, vec3 kappa) : Material(REFLECTIVE) {
         vec3 one(1, 1, 1);
-        F0 = ((n-one)*(n-one) + kappa * kappa) / ((n+one)*(n+one) + kappa * kappa);
+        F0 = ((n - one)*(n - one)+kappa * kappa) / ((n + one)*(n + one) + kappa * kappa);
     }
 };
 
@@ -52,10 +52,10 @@ public:
 	virtual Hit intersect(const Ray& ray) = 0;
 };
 
-struct Sphere : public Intersectable {
+class Sphere : public Intersectable {
 	vec3 center;
 	float radius;
-
+public:
 	Sphere(const vec3& _center, float _radius, Material* _material) {
 		center = _center;
 		radius = _radius;
@@ -89,9 +89,12 @@ public:
 		eye = _eye;
 		lookat = _lookat;
 		vec3 w = eye - lookat;
-		float focus = length(w);
-		right = normalize(cross(vup, w)) * focus * tanf(fov / 2);
-		up = normalize(cross(w, right)) * focus * tanf(fov / 2);
+//		float focus = length(w);
+//		right = normalize(cross(vup, w)) * focus * tanf(fov / 2);
+//		up = normalize(cross(w, right)) * focus * tanf(fov / 2);
+        float windowSize = length(w) * tanf(fov / 2);
+        right = normalize(cross(vup, w)) * windowSize;
+        up = normalize(cross(w, right)) * windowSize;
 	}
 	Ray getRay(int X, int Y) {
 		vec3 dir = lookat + right * (2.0f * (X + 0.5f) / windowWidth - 1) + up * (2.0f * (Y + 0.5f) / windowHeight - 1) - eye;
@@ -123,19 +126,20 @@ public:
 		float fov = 45 * M_PI / 180;
 		camera.set(eye, lookat, vup, fov);
 
-		La = vec3(0.4f, 0.4f, 0.4f);
+        La = vec3(0.4f, 0.4f, 0.4f);
 		vec3 lightDirection(1, 1, 1), Le(2, 2, 2);
 		lights.push_back(new Light(lightDirection, Le));
 
         vec3 kd1(0.3f, 0.2f, 0.1f), kd2(0.1f, 0.2f, 0.3f), ks(2, 2, 2);
         
-        vec3 n(1, 1, 1), kappa(5, 4, 3);
+        vec3 n(0.17f, 0.35f, 1.5f), kappa(3.1f, 2.7f, 1.9f);
         
 		Material * material1 = new RoughMaterial(kd1, ks, 50);
         Material * material2 = new ReflectiveMaterial(n, kappa);
-		for (int i = 0; i < 150; i++)
-//			objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material1));
+        for (int i = 0; i < 150; i++) {
+            objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material1));
             objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material2));
+        }
 	}
 
 	void render(std::vector<vec4>& image) {
@@ -187,7 +191,7 @@ public:
             vec3 reflectedDir = ray.dir - hit.normal * dot(hit.normal, ray.dir) * 2.0f;
             float cosa = -dot(ray.dir, hit.normal);
             vec3 one(1, 1, 1);
-            vec3 F = hit.material->F0 + (one - hit.material->F0) * pow(1 - cosa, 5);
+            vec3 F = hit.material->F0 + (one - hit.material->F0) * powf(1 - cosa, 5);
             outRadiance = outRadiance + trace(Ray(hit.position + hit.normal * epsilon, reflectedDir), depth + 1)  * F;
         }
 		
