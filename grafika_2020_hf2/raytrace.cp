@@ -23,7 +23,7 @@ struct RoughMaterial : Material {
 };
 
 vec3 operator/(vec3 num, vec3 denom) {
-    return(num.x / denom.x, num.y / denom.y, num.z / denom.z);
+    return vec3(num.x / denom.x, num.y / denom.y, num.z / denom.z);
 }
 
 struct ReflectiveMaterial : Material {
@@ -32,6 +32,8 @@ struct ReflectiveMaterial : Material {
         F0 = ((n - one) * (n - one) + kappa * kappa) / ((n + one) * (n + one) + kappa * kappa);
     }
 };
+
+
 
 struct Hit {
     float t;
@@ -82,6 +84,180 @@ public:
     }
 };
 
+class Hiperboloid : public Intersectable {
+    vec3 center;
+    vec4 r;
+    vec3 s;
+    vec3 t;
+public:
+    Hiperboloid(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
+        center = _center;
+        r = _r;
+        material = _material;
+        s = _s;
+        t = _t;
+    }
+
+    mat4 Q() {
+        return mat4(
+            vec4(1 / (r.x * r.x), 0, 0, 0),
+            vec4(0, 1 / (r.y * r.y), 0, 0),
+            vec4(0, 0, -(1 / (r.z * r.z)), 0),
+            vec4(0, 0, 0, -1)
+        );
+    }
+
+    mat4 T() {
+        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, s.y, 0, 0),
+            vec4(0, 0, s.z, 0),
+            vec4(t.x, t.y, t.z, 1));
+    }
+
+    mat4 TI() {
+        return mat4(vec4(1 / s.x, 0, 0, 0),
+            vec4(0, 1 / s.y, 0, 0),
+            vec4(0, 0, 1 / s.z, 0),
+            vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
+    }
+
+    mat4 TIT() {
+        return mat4(
+            vec4(1 / s.x, 0, 0, -(t.x / s.x)),
+            vec4(0, 1 / s.y, 0, -(t.y / s.y)),
+            vec4(0, 0, 1 / s.z, -(t.z / s.z)),
+            vec4(0, 0, 0, 1)
+        );
+    }
+
+    vec3 gradf(vec4 r) {
+        vec4 g = r * TI() * Q() * TIT() * 2;
+        return vec3(g.x, g.y, g.z);
+    }
+
+
+    Hit intersect(const Ray& ray) {
+        Hit hit;
+        vec3 dist = ray.start - center;
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float discr = b * b - 4.0f * a * c;
+        if (discr < 0) return hit;
+        float sqrt_discr = sqrtf(discr);
+        float t1 = (-b + sqrt_discr) / 2.0f / a;    // t1 >= t2 for sure
+        float t2 = (-b - sqrt_discr) / 2.0f / a;
+
+        if (t1 <= 0) return hit;
+        hit.t = (t2 > 0) ? t2 : t1;
+
+        hit.position = ray.start + ray.dir * hit.t;
+        hit.material = material;
+        if (hit.position.z > -0.455 || hit.position.z < -1.4f) {
+            hit.t = t1;
+            hit.position = ray.start + ray.dir * hit.t;
+            //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
+            //            Material* material1 = new RoughMaterial(kd1, ks, 50);
+            hit.material = material;
+            if (hit.position.z > -0.455 || hit.position.z < -1.4f) {
+                Hit hit1;
+                hit1.t = -1;
+                return hit1;
+            }
+        }
+        hit.normal = gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))) / length(gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))));
+        return hit;
+    }
+};
+
+
+
+class Paraboloid : public Intersectable {
+    vec3 center;
+    vec4 r;
+    vec3 s;
+    vec3 t;
+public:
+    Paraboloid(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
+        center = _center;
+        r = _r;
+        material = _material;
+        s = _s;
+        t = _t;
+    }
+
+    mat4 Q() {
+        return mat4(
+            vec4(1 / (r.x * r.x), 0, 0, 0),
+            vec4(0, 1 / (r.y * r.y), 0, 0),
+            vec4(0, 0, 0, 1),
+            vec4(0, 0, 0, 0)
+        );
+    }
+
+    mat4 T() {
+        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, s.y, 0, 0),
+            vec4(0, 0, s.z, 0),
+            vec4(t.x, t.y, t.z, 1));
+    }
+
+    mat4 TI() {
+        return mat4(vec4(1 / s.x, 0, 0, 0),
+            vec4(0, 1 / s.y, 0, 0),
+            vec4(0, 0, 1 / s.z, 0),
+            vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
+    }
+
+    mat4 TIT() {
+        return mat4(
+            vec4(1 / s.x, 0, 0, -(t.x / s.x)),
+            vec4(0, 1 / s.y, 0, -(t.y / s.y)),
+            vec4(0, 0, 1 / s.z, -(t.z / s.z)),
+            vec4(0, 0, 0, 1)
+        );
+    }
+
+    vec3 gradf(vec4 r) {
+        vec4 g = r * TI() * Q() * TIT() * 2;
+        return vec3(g.x, g.y, g.z);
+    }
+
+
+    Hit intersect(const Ray& ray) {
+        Hit hit;
+        vec3 dist = ray.start - center;
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float discr = b * b - 4.0f * a * c;
+        if (discr < 0) return hit;
+        float sqrt_discr = sqrtf(discr);
+        float t1 = (-b + sqrt_discr) / 2.0f / a;    // t1 >= t2 for sure
+        float t2 = (-b - sqrt_discr) / 2.0f / a;
+
+        if (t1 <= 0) return hit;
+        hit.t = (t2 > 0) ? t2 : t1;
+
+        hit.position = ray.start + ray.dir * hit.t;
+        hit.material = material;
+        if (hit.position.z < -1.4f) {
+            hit.t = t1;
+            hit.position = ray.start + ray.dir * hit.t;
+            //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
+            //            Material* material1 = new RoughMaterial(kd1, ks, 50);
+            hit.material = material;
+            if (hit.position.z <-1.4f) {
+                Hit hit1;
+                hit1.t = -1;
+                return hit1;
+            }
+        }
+        hit.normal = gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))) / length(gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))));
+        return hit;
+    }
+};
+
 class Room : public Intersectable {
     vec3 center;
     vec4 r;
@@ -118,19 +294,19 @@ public:
         float sqrt_discr = sqrtf(discr);
         float t1 = (-b + sqrt_discr) / 2.0f / a;    // t1 >= t2 for sure
         float t2 = (-b - sqrt_discr) / 2.0f / a;
-        
+
         if (t1 <= 0) return hit;
         hit.t = (t2 > 0) ? t2 : t1;
 
         hit.position = ray.start + ray.dir * hit.t;
         hit.material = material;
-        if (hit.position.z  > 1.1f) {
+        if (hit.position.z > 1.2f) {
             hit.t = t1;
             hit.position = ray.start + ray.dir * hit.t;
-//            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
-//            Material* material1 = new RoughMaterial(kd1, ks, 50);
+            //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
+            //            Material* material1 = new RoughMaterial(kd1, ks, 50);
             hit.material = material;
-            if (hit.position.z > 1.1f) {
+            if (hit.position.z > 1.2f) {
                 Hit hit1;
                 hit1.t = -1;
                 return hit1;
@@ -162,28 +338,28 @@ public:
             vec4(0, 0, 0, -1)
         );
     }
-    
+
     mat4 T() {
         return mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
     }
-    
+
     mat4 TI() {
         return mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
     }
-    
+
     mat4 TIT() {
         return mat4(
-                    vec4(1/s.x, 0, 0, -(t.x / s.x)),
-                    vec4(0, 1/s.y, 0, -(t.y/s.y)),
-                    vec4(0, 0, 1/s.z, -(t.z/s.z)),
-                    vec4(0, 0, 0, 1)
-                    );
+            vec4(1 / s.x, 0, 0, -(t.x / s.x)),
+            vec4(0, 1 / s.y, 0, -(t.y / s.y)),
+            vec4(0, 0, 1 / s.z, -(t.z / s.z)),
+            vec4(0, 0, 0, 1)
+        );
     }
 
     vec3 gradf(vec4 r) {
@@ -203,16 +379,14 @@ public:
         float sqrt_discr = sqrtf(discr);
         float t1 = (-b + sqrt_discr) / 2.0f / a;    // t1 >= t2 for sure
         float t2 = (-b - sqrt_discr) / 2.0f / a;
-        
-        if (t1 <= 0) return hit;
-        hit.t = (t2 > 0) ? t2 : t1;
 
-        hit.position = ray.start + ray.dir * hit.t;
-        hit.material = material;
-        hit.t = t1;
-        hit.position = ray.start + ray.dir * hit.t;
-        hit.normal = gradf(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        if (t1 <= 0) return hit;
         
+        hit.t = (t2 > 0) ? t2 : t1;
+        hit.position = ray.start + ray.dir * hit.t;
+        hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
+        hit.material = material;
+
         return hit;
     }
 };
@@ -258,36 +432,50 @@ class Scene {
     vec3 La;
 public:
     void build() {
-//        vec3 eye = vec3(0, -4.0f, 0), vup = vec3(0, 0, 1), lookat = vec3(0, 0, 0.1f);
-        vec3 eye = vec3(0, -6.0f, 0), vup = vec3(0, 0, 1), lookat = vec3(0, 0, -1.0f);
+        //        vec3 eye = vec3(0, -4.0f, 0), vup = vec3(0, 0, 1), lookat = vec3(0, 0, 0.1f);
+        vec3 eye = vec3(-0.5f, -8.5f, -0.7f), vup = vec3(0, 0, 1), lookat = vec3(0.5f, 0, -1.5f);
+        //vec3 eye = vec3(20, 20, 20), vup = vec3(0, 0, 1), lookat = vec3(0, 0, 0.0f);
         float fov = 45 * M_PI / 180;
         camera.set(eye, lookat, vup, fov);
 
-        La = vec3(0.5f, 0.5f, 0.5f);
-        vec3 lightDirection(-0.2f, 0, 1), Le(2, 2, 2);
+        La = vec3(0.8f, 0.8f, 0.8f);
+        vec3 lightDirection(0.0f, -2, 10), Le(2, 2, 2);
+        //vec3 lightDirection(0.5f, -1, 2), Le(2, 2, 2);
         lights.push_back(new Light(lightDirection, Le));
 
         //vec3 kd1(0.3f, 0.2f, 0.1f), kd2(0.1f, 0.2f, 0.3f), ks(2, 2, 2);
 
 
-        //vec3 n(0.17f, 0.35f, 1.5f);
-        //vec3 kappa(3.1f, 2.7f, 1.9f);
-        //Material* material2 = new ReflectiveMaterial(n, kappa);
+        vec3 n(0.17f, 0.35f, 1.5f);
+        vec3 kappa(3.1f, 2.7f, 1.9f);
+        //vec3 n(1, 1, 1);
+        //vec3 kappa(5,7,3);
+        Material* reflectiveMaterial = new ReflectiveMaterial(n, kappa);
         //for (int i = 0; i < 150; i++) {
             //objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material1));
             //objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material2));
         //}
 
-        vec3 kd1(0.3f, 0.2f, 0.1f);
+        vec3 kd1(0.3f, 0.2f, 0.15f);
         vec3 kd2(0.1f, 0.2f, 0.3f);
         vec3 ks(2, 2, 2);
-        vec3 grey(0.4f, 0.2f, 0.4f);
+        vec3 grey(0.15f, 0.15f, 0.15f);
+        vec3 lightOrange(0.8f, 0.25f, 0.25f);
+        vec3 lightBlue(0.0f, 0.25f, 0.25f);
+        vec3 roomColor(0.15f, 0.15f, 0.2f);
+        Material* roomRough = new RoughMaterial(roomColor, ks, 50);
         Material* blueRough = new RoughMaterial(kd2, ks, 50);
         Material* orangeRough = new RoughMaterial(kd1, ks, 50);
         Material* greyRough = new RoughMaterial(grey, ks, 50);
+        Material* lightOrangeRough = new RoughMaterial(lightOrange, ks, 50);
+        Material* lightBlueRough = new RoughMaterial(lightBlue, ks, 50);
 
-        objects.push_back(new Room(vec3(0, 0, 0), vec4(2.4f, 6, 1.4f), blueRough));
-        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.4f, 1.5f, 1), vec3(0.7f,0.7f,0.7f), vec3(-0.6f, -1, -0.6f), greyRough));
+        objects.push_back(new Room(vec3(0, 0, 0), vec4(2.4f, 18, 1.4f), roomRough));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.4f, 1.5f, 1), vec3(0.5f, 0.5f, 0.5f), vec3(-1.0f, -5.5f, -0.7f), reflectiveMaterial));
+        objects.push_back(new Hiperboloid(vec3(0, 0, 0), vec4(0.3f,0.3f,0.3f), vec3(1,1,1), vec3(-0.1f,-3.0f, -0.9f), orangeRough));
+        objects.push_back(new Paraboloid(vec3(0, 0, 0), vec4(0.5f, 1, 1), vec3(1, 1, 1), vec3(0.5f, -5.5f, -0.6f), lightBlueRough));
+        //objects.push_back(new Sphere(vec3(0.5f, 0.5f, 0.5f), 1, reflectiveMaterial));
+
 
     }
 
@@ -340,7 +528,7 @@ public:
             vec3 reflectedDir = ray.dir - hit.normal * dot(hit.normal, ray.dir) * 2.0f;
             float cosa = -dot(ray.dir, hit.normal);
             vec3 one(1, 1, 1);
-            vec3 F = hit.material->F0 + (one - hit.material->F0) * powf(1 - cosa, 5);
+            vec3 F = hit.material->F0 + (one - hit.material->F0) * pow(1 - cosa, 5);
             outRadiance = outRadiance + trace(Ray(hit.position + hit.normal * epsilon, reflectedDir), depth + 1) * F;
         }
 
