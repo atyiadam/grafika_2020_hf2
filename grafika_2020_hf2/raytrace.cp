@@ -165,7 +165,94 @@ public:
                 return hit1;
             }
         }
-        hit.normal = gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))) / length(gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))));
+        hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
+        return hit;
+    }
+};
+
+
+class LightTube : public Intersectable {
+    vec3 center;
+    vec4 r;
+    vec3 s;
+    vec3 t;
+public:
+    LightTube(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
+        center = _center;
+        r = _r;
+        material = _material;
+        s = _s;
+        t = _t;
+    }
+
+    mat4 Q() {
+        return mat4(
+            vec4(1 / (r.x * r.x), 0, 0, 0),
+            vec4(0, 1 / (r.y * r.y), 0, 0),
+            vec4(0, 0, -(1 / (r.z * r.z)), 0),
+            vec4(0, 0, 0, -1)
+        );
+    }
+
+    mat4 T() {
+        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, s.y, 0, 0),
+            vec4(0, 0, s.z, 0),
+            vec4(t.x, t.y, t.z, 1));
+    }
+
+    mat4 TI() {
+        return mat4(vec4(1 / s.x, 0, 0, 0),
+            vec4(0, 1 / s.y, 0, 0),
+            vec4(0, 0, 1 / s.z, 0),
+            vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
+    }
+
+    mat4 TIT() {
+        return mat4(
+            vec4(1 / s.x, 0, 0, -(t.x / s.x)),
+            vec4(0, 1 / s.y, 0, -(t.y / s.y)),
+            vec4(0, 0, 1 / s.z, -(t.z / s.z)),
+            vec4(0, 0, 0, 1)
+        );
+    }
+
+    vec3 gradf(vec4 r) {
+        vec4 g = r * TI() * Q() * TIT() * 2;
+        return vec3(g.x, g.y, g.z);
+    }
+
+
+    Hit intersect(const Ray& ray) {
+        Hit hit;
+        vec3 dist = ray.start - center;
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float discr = b * b - 4.0f * a * c;
+        if (discr < 0) return hit;
+        float sqrt_discr = sqrtf(discr);
+        float t1 = (-b + sqrt_discr) / 2.0f / a;    // t1 >= t2 for sure
+        float t2 = (-b - sqrt_discr) / 2.0f / a;
+
+        if (t1 <= 0) return hit;
+        hit.t = (t2 > 0) ? t2 : t1;
+
+        hit.position = ray.start + ray.dir * hit.t;
+        hit.material = material;
+        if (hit.position.z > 4.7f || hit.position.z < 1.35f) {
+            hit.t = t1;
+            hit.position = ray.start + ray.dir * hit.t;
+            //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
+            //            Material* material1 = new RoughMaterial(kd1, ks, 50);
+            hit.material = material;
+            if (hit.position.z > 4.7f || hit.position.z < 1.35f) {
+                Hit hit1;
+                hit1.t = -1;
+                return hit1;
+            }
+        }
+        hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
         return hit;
     }
 };
@@ -247,13 +334,13 @@ public:
             //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
             //            Material* material1 = new RoughMaterial(kd1, ks, 50);
             hit.material = material;
-            if (hit.position.z <-1.4f) {
+            if (hit.position.z < -1.4f) {
                 Hit hit1;
                 hit1.t = -1;
                 return hit1;
             }
         }
-        hit.normal = gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))) / length(gradf((vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0))));
+        hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
         return hit;
     }
 };
@@ -300,19 +387,19 @@ public:
 
         hit.position = ray.start + ray.dir * hit.t;
         hit.material = material;
-        if (hit.position.z > 1.2f) {
+        if (hit.position.z > 1.39f) {
             hit.t = t1;
             hit.position = ray.start + ray.dir * hit.t;
             //            vec3 kd1(0.3f, 0.2f, 0.1f), ks(2, 2, 2);
             //            Material* material1 = new RoughMaterial(kd1, ks, 50);
             hit.material = material;
-            if (hit.position.z > 1.2f) {
+            if (hit.position.z > 1.39f) {
                 Hit hit1;
                 hit1.t = -1;
                 return hit1;
             }
         }
-        hit.normal = gradf(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
         return hit;
     }
 };
@@ -381,7 +468,7 @@ public:
         float t2 = (-b - sqrt_discr) / 2.0f / a;
 
         if (t1 <= 0) return hit;
-        
+
         hit.t = (t2 > 0) ? t2 : t1;
         hit.position = ray.start + ray.dir * hit.t;
         hit.normal = gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))) / length(gradf((vec4(hit.position.x, hit.position.y, hit.position.z, 1))));
@@ -421,6 +508,13 @@ struct Light {
     }
 };
 
+struct LightPoint {
+    vec3 pos;
+    LightPoint(vec3 _pos) {
+        pos = normalize(_pos);
+    }
+};
+
 float rnd() { return (float)rand() / RAND_MAX; }
 
 const float epsilon = 0.0001f;
@@ -428,33 +522,32 @@ const float epsilon = 0.0001f;
 class Scene {
     std::vector<Intersectable*> objects;
     std::vector<Light*> lights;
+    std::vector<LightPoint*> lightPoints;
     Camera camera;
     vec3 La;
 public:
     void build() {
         //        vec3 eye = vec3(0, -4.0f, 0), vup = vec3(0, 0, 1), lookat = vec3(0, 0, 0.1f);
-        vec3 eye = vec3(-0.5f, -8.5f, -0.7f), vup = vec3(0, 0, 1), lookat = vec3(0.5f, 0, -1.5f);
+        vec3 eye = vec3(3.5f, -5.5f, -0.9f), vup = vec3(0, 0, 1), lookat = vec3(-1.5f, 0, -1.2f);
+        //vec3 eye = vec3(3.5f, -5.5f, -0.9f), vup = vec3(0, 0, 1), lookat = vec3(-1.5f, 0, 1.2f);
         //vec3 eye = vec3(20, 20, 20), vup = vec3(0, 0, 1), lookat = vec3(0, 0, 0.0f);
         float fov = 45 * M_PI / 180;
         camera.set(eye, lookat, vup, fov);
 
         La = vec3(0.8f, 0.8f, 0.8f);
-        vec3 lightDirection(0.0f, -2, 10), Le(2, 2, 2);
-        //vec3 lightDirection(0.5f, -1, 2), Le(2, 2, 2);
+        //vec3 lightDirection(0.0f, 6, 10), Le(2, 2, 2);
+        vec3 lightDirection(0, 6, 8), Le(2, 2, 2);
         lights.push_back(new Light(lightDirection, Le));
+        
+        
+        
+        vec3 goldN(0.17f, 0.35f, 1.5f);
+        vec3 goldKappa(3.1f, 2.7f, 1.9f);
+        vec3 silverN(0.14f, 0.16f, 0.13f);
+        vec3 silverKappa(4.1f, 2.3f, 3.1f);
+        Material* goldMaterial = new ReflectiveMaterial(goldN, goldKappa);
+        Material* silverMaterial = new ReflectiveMaterial(silverN, silverKappa);
 
-        //vec3 kd1(0.3f, 0.2f, 0.1f), kd2(0.1f, 0.2f, 0.3f), ks(2, 2, 2);
-
-
-        vec3 n(0.17f, 0.35f, 1.5f);
-        vec3 kappa(3.1f, 2.7f, 1.9f);
-        //vec3 n(1, 1, 1);
-        //vec3 kappa(5,7,3);
-        Material* reflectiveMaterial = new ReflectiveMaterial(n, kappa);
-        //for (int i = 0; i < 150; i++) {
-            //objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material1));
-            //objects.push_back(new Sphere(vec3(rnd() - 0.5f, rnd() - 0.5f, rnd() - 0.5f), rnd() * 0.1f, material2));
-        //}
 
         vec3 kd1(0.3f, 0.2f, 0.15f);
         vec3 kd2(0.1f, 0.2f, 0.3f);
@@ -470,12 +563,27 @@ public:
         Material* lightOrangeRough = new RoughMaterial(lightOrange, ks, 50);
         Material* lightBlueRough = new RoughMaterial(lightBlue, ks, 50);
 
-        objects.push_back(new Room(vec3(0, 0, 0), vec4(2.4f, 18, 1.4f), roomRough));
-        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.4f, 1.5f, 1), vec3(0.5f, 0.5f, 0.5f), vec3(-1.0f, -5.5f, -0.7f), reflectiveMaterial));
-        objects.push_back(new Hiperboloid(vec3(0, 0, 0), vec4(0.3f,0.3f,0.3f), vec3(1,1,1), vec3(-0.1f,-3.0f, -0.9f), orangeRough));
-        objects.push_back(new Paraboloid(vec3(0, 0, 0), vec4(0.5f, 1, 1), vec3(1, 1, 1), vec3(0.5f, -5.5f, -0.6f), lightBlueRough));
-        //objects.push_back(new Sphere(vec3(0.5f, 0.5f, 0.5f), 1, reflectiveMaterial));
-
+        
+        // z = 1.39 r=2.1
+        vec3 origo(0, 0, 1.39f);
+        srand(time(NULL));
+        while (lightPoints.size() < 10) {
+            float randX = -2.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.1 - (-2.1))));
+            float randY = -2.1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.1 - (-2.1))));
+                        
+            float distance = sqrt((origo.x - randX)*(origo.x - randX) + (origo.y - randY)*(origo.y - randY));
+            
+            if (distance < 2.1f) {
+                lightPoints.push_back(new LightPoint(vec3(randX, randY, 1.39f)));
+//                objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(1,1,1), vec3(0.1f,0.1f,0.1f), vec3(randX,randY,1.39f), lightBlueRough));
+            }
+        }
+        
+        objects.push_back(new Room(vec3(0, 0, 0), vec4(18, 18, 1.40f), roomRough));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.7f, 2.0f, 0.7f), vec3(0.4f, 0.4f, 0.4f), vec3(-1.0f, -2.5f, -1.1f), lightBlueRough));
+        objects.push_back(new Hiperboloid(vec3(0, 0, 0), vec4(0.3f, 0.3f, 0.3f), vec3(1, 1, 1), vec3(1.0f, -1.0f, -0.9f), orangeRough));
+        objects.push_back(new Paraboloid(vec3(0, 0, 0), vec4(1, 1, 1), vec3(0.7f, 0.7f, 0.7f), vec3(-1.5f, 0.25f, -0.6f), goldMaterial));
+        objects.push_back(new LightTube(vec3(0, 0, 0), vec4(1,1,1), vec3(1.6f, 1.6f, 1.6f), vec3(0,0,-0.04f), silverMaterial));
 
     }
 
@@ -505,24 +613,69 @@ public:
     }
 
     vec3 trace(Ray ray, int depth = 0) {
-        if (depth > 5) return La;
+        if (depth > 10) return La;
+        // Pont amivel eloszor utkozik a kamerabol a pixelbe
         Hit hit = firstIntersect(ray);
+        // felulirni ––––> return  sky + sun * pow(dot(ray.dir, sunDir), 10)
         if (hit.t < 0) return La;
 
         vec3 outRadiance(0, 0, 0);
+        
+        
         if (hit.material->type == ROUGH) {
-            outRadiance = hit.material->ka * La;
-            for (Light* light : lights) {
-                Ray shadowRay(hit.position + hit.normal * epsilon, light->direction);
-                float cosTheta = dot(hit.normal, light->direction);
-                if (cosTheta > 0 && !shadowIntersect(shadowRay)) {    // shadow computation
-                    outRadiance = outRadiance + light->Le * hit.material->kd * cosTheta;
-                    vec3 halfway = normalize(-ray.dir + light->direction);
-                    float cosDelta = dot(hit.normal, halfway);
-                    if (cosDelta > 0) outRadiance = outRadiance + light->Le * hit.material->ks * powf(cosDelta, hit.material->shininess);
+            // Loop a felvett mintapontokon
+            for (LightPoint* lightPoint : lightPoints) {
+
+                // A pixelbol az egyik fenyforrasba huzott ray
+                // Ez mar az ezust hiperboloidba fog mutatni
+                Ray pixelToLight(hit.position + hit.normal * epsilon, lightPoint->pos);
+
+                int bounce = 0;
+                // Van hogy nem feltetlenul jut ki a feny, ezt le kell kezelni valahogy (erre jo a while loopunk?)
+                vec3 reflectedDir(0, 0, 0);
+                Ray hiperboloidRay(vec3(0,0,0), vec3(0,0,0));
+                while (bounce < 100) {
+                    if (bounce == 0) {
+                        Hit hiperboloidHit = firstIntersect(pixelToLight);
+                        if (hiperboloidHit.t < 0) break;
+                        reflectedDir = hiperboloidRay.dir - hiperboloidHit.normal * dot(hiperboloidHit.normal, hiperboloidRay.dir) * 2.0f;
+                        hiperboloidRay.start = hiperboloidHit.position + hiperboloidHit.normal * epsilon;
+                        hiperboloidRay.dir = reflectedDir;
+                    } else {
+                        Hit hiperboloidHit = firstIntersect(hiperboloidRay);
+                        if (hiperboloidHit.t < 0) break;
+                        reflectedDir = hiperboloidRay.dir - hiperboloidHit.normal * dot(hiperboloidHit.normal, hiperboloidRay.dir) * 2.0f;
+                        hiperboloidRay.start = hiperboloidHit.position + hiperboloidHit.normal * epsilon;
+                        hiperboloidRay.dir = reflectedDir;
+                    }
+                
+                    bounce++;
                 }
+                
+                outRadiance = outRadiance + outRadiance;
+
             }
+                        
         }
+
+            
+            
+// ===================================================================================================================
+// ===================================================================================================================
+            
+            
+//            outRadiance = hit.material->ka * La;
+//            for (Light* light : lights) {
+//                Ray shadowRay(hit.position + hit.normal * epsilon, light->direction);
+//                float cosTheta = dot(hit.normal, light->direction);
+//                if (cosTheta > 0 && !shadowIntersect(shadowRay)) {    // shadow computation
+//                    outRadiance = outRadiance + light->Le * hit.material->kd * cosTheta;
+//                    vec3 halfway = normalize(-ray.dir + light->direction);
+//                    float cosDelta = dot(hit.normal, halfway);
+//                    if (cosDelta > 0) outRadiance = outRadiance + light->Le * hit.material->ks * powf(cosDelta, hit.material->shininess);
+//                }
+//            }
+        
 
         if (hit.material->type == REFLECTIVE) {
             vec3 reflectedDir = ray.dir - hit.normal * dot(hit.normal, ray.dir) * 2.0f;
