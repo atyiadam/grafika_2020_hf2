@@ -104,6 +104,7 @@ class Hiperboloid : public Intersectable {
     vec4 r;
     vec3 s;
     vec3 t;
+    mat4 Q, T, TI, TIT, TIQTIT;
 public:
     Hiperboloid(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
         center = _center;
@@ -111,42 +112,33 @@ public:
         material = _material;
         s = _s;
         t = _t;
-    }
-
-    mat4 Q() {
-        return mat4(
+        Q = mat4(
             vec4(1 / (r.x * r.x), 0, 0, 0),
             vec4(0, 1 / (r.y * r.y), 0, 0),
             vec4(0, 0, -(1 / (r.z * r.z)), 0),
             vec4(0, 0, 0, -1)
         );
-    }
-
-    mat4 T() {
-        return mat4(vec4(s.x, 0, 0, 0),
+        T = mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
-    }
-
-    mat4 TI() {
-        return mat4(vec4(1 / s.x, 0, 0, 0),
+        TI = mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
-    }
-
-    mat4 TIT() {
-        return mat4(
+        TIT = mat4(
             vec4(1 / s.x, 0, 0, -(t.x / s.x)),
             vec4(0, 1 / s.y, 0, -(t.y / s.y)),
             vec4(0, 0, 1 / s.z, -(t.z / s.z)),
             vec4(0, 0, 0, 1)
         );
+        TIQTIT = TI * Q * TIT;
     }
 
+
+
     vec3 gradf(vec4 r) {
-        vec4 g = r * TI() * Q() * TIT() * 2;
+        vec4 g = r * TIQTIT * 2;
         return vec3(g.x, g.y, g.z);
     }
 
@@ -154,9 +146,9 @@ public:
     Hit intersect(const Ray& ray) {
         Hit hit;
         vec3 dist = ray.start - center;
-        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
         float discr = b * b - 4.0f * a * c;
         if (discr < 0) return hit;
         float sqrt_discr = sqrtf(discr);
@@ -189,6 +181,7 @@ class LightTube : public Intersectable {
     vec4 r;
     vec3 s;
     vec3 t;
+    mat4 Q, T, TI, TIT, TIQTIT;
 public:
     LightTube(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
         center = _center;
@@ -196,42 +189,30 @@ public:
         material = _material;
         s = _s;
         t = _t;
-    }
-
-    mat4 Q() {
-        return mat4(
+        Q = mat4(
             vec4(1 / (r.x * r.x), 0, 0, 0),
             vec4(0, 1 / (r.y * r.y), 0, 0),
             vec4(0, 0, -(1 / (r.z * r.z)), 0),
-            vec4(0, 0, 0, -1)
-        );
-    }
-
-    mat4 T() {
-        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, 0, 0, -1));
+        T = mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
-    }
-
-    mat4 TI() {
-        return mat4(vec4(1 / s.x, 0, 0, 0),
+        TI = mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
-    }
-
-    mat4 TIT() {
-        return mat4(
+        TIT = mat4(
             vec4(1 / s.x, 0, 0, -(t.x / s.x)),
             vec4(0, 1 / s.y, 0, -(t.y / s.y)),
             vec4(0, 0, 1 / s.z, -(t.z / s.z)),
-            vec4(0, 0, 0, 1)
-        );
+            vec4(0, 0, 0, 1));
+        TIQTIT = TI * Q * TIT;
     }
 
+
     vec3 gradf(vec4 r) {
-        vec4 g = r * TI() * Q() * TIT() * 2;
+        vec4 g = r * TIQTIT * 2;
         return vec3(g.x, g.y, g.z);
     }
 
@@ -239,9 +220,9 @@ public:
     Hit intersect(const Ray& ray) {
         Hit hit;
         vec3 dist = ray.start - center;
-        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
         float discr = b * b - 4.0f * a * c;
         if (discr < 0) return hit;
         float sqrt_discr = sqrtf(discr);
@@ -275,6 +256,7 @@ class Paraboloid : public Intersectable {
     vec4 r;
     vec3 s;
     vec3 t;
+    mat4 Q, T, TI, TIT, TIQTIT;
 public:
     Paraboloid(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
         center = _center;
@@ -282,42 +264,30 @@ public:
         material = _material;
         s = _s;
         t = _t;
-    }
-
-    mat4 Q() {
-        return mat4(
+        Q = mat4(
             vec4(1 / (r.x * r.x), 0, 0, 0),
             vec4(0, 1 / (r.y * r.y), 0, 0),
             vec4(0, 0, 0, 1),
-            vec4(0, 0, 0, 0)
-        );
-    }
-
-    mat4 T() {
-        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, 0, 0, 0));
+        T = mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
-    }
-
-    mat4 TI() {
-        return mat4(vec4(1 / s.x, 0, 0, 0),
+        TI = mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
-    }
-
-    mat4 TIT() {
-        return mat4(
+        TIT = mat4(
             vec4(1 / s.x, 0, 0, -(t.x / s.x)),
             vec4(0, 1 / s.y, 0, -(t.y / s.y)),
             vec4(0, 0, 1 / s.z, -(t.z / s.z)),
-            vec4(0, 0, 0, 1)
-        );
+            vec4(0, 0, 0, 1));
+        TIQTIT = TI * Q * TIT;
     }
 
+
     vec3 gradf(vec4 r) {
-        vec4 g = r * TI() * Q() * TIT() * 2;
+        vec4 g = r * TIQTIT * 2;
         return vec3(g.x, g.y, g.z);
     }
 
@@ -325,9 +295,9 @@ public:
     Hit intersect(const Ray& ray) {
         Hit hit;
         vec3 dist = ray.start - center;
-        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
         float discr = b * b - 4.0f * a * c;
         if (discr < 0) return hit;
         float sqrt_discr = sqrtf(discr);
@@ -357,49 +327,37 @@ public:
 class Room : public Intersectable {
     vec3 center, s, t;
     vec4 r;
+    mat4 Q, T, TI, TIT, TIQTIT;
 public:
     Room(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
         center = _center;
-        material = _material;
         r = _r;
+        material = _material;
         s = _s;
         t = _t;
-    }
-
-     mat4 Q() {
-        return mat4(
+        Q = mat4(
             vec4(1 / (r.x * r.x), 0, 0, 0),
             vec4(0, 1 / (r.y * r.y), 0, 0),
             vec4(0, 0, 1 / (r.z * r.z), 0),
-            vec4(0, 0, 0, -1)
-        );
-    }
-
-    mat4 T() {
-        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, 0, 0, -1));
+        T = mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
-    }
-
-    mat4 TI() {
-        return mat4(vec4(1 / s.x, 0, 0, 0),
+        TI = mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
-    }
-
-    mat4 TIT() {
-        return mat4(
+        TIT = mat4(
             vec4(1 / s.x, 0, 0, -(t.x / s.x)),
             vec4(0, 1 / s.y, 0, -(t.y / s.y)),
             vec4(0, 0, 1 / s.z, -(t.z / s.z)),
-            vec4(0, 0, 0, 1)
-        );
+            vec4(0, 0, 0, 1));
+        TIQTIT = TI * Q * TIT;
     }
 
     vec3 gradf(vec4 r) {
-        vec4 g = r * TI() * Q() * TIT() * 2;
+        vec4 g = r * TIQTIT * 2;
         return vec3(g.x, g.y, g.z);
     }
 
@@ -407,9 +365,9 @@ public:
     Hit intersect(const Ray& ray) {
         Hit hit;
         vec3 dist = ray.start - center;
-        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
         float discr = b * b - 4.0f * a * c;
         if (discr < 0) return hit;
         float sqrt_discr = sqrtf(discr);
@@ -440,49 +398,37 @@ public:
 class Ellipsoid : public Intersectable {
     vec3 center, s, t;
     vec4 r;
+    mat4 Q, T, TI, TIT, TIQTIT;
 public:
     Ellipsoid(const vec3& _center, vec4 _r, vec3 _s, vec3 _t, Material* _material) {
         center = _center;
-        material = _material;
         r = _r;
+        material = _material;
         s = _s;
         t = _t;
-    }
-
-    mat4 Q() {
-        return mat4(
+        Q = mat4(
             vec4(1 / (r.x * r.x), 0, 0, 0),
             vec4(0, 1 / (r.y * r.y), 0, 0),
             vec4(0, 0, 1 / (r.z * r.z), 0),
-            vec4(0, 0, 0, -1)
-        );
-    }
-
-    mat4 T() {
-        return mat4(vec4(s.x, 0, 0, 0),
+            vec4(0, 0, 0, -1));
+        T = mat4(vec4(s.x, 0, 0, 0),
             vec4(0, s.y, 0, 0),
             vec4(0, 0, s.z, 0),
             vec4(t.x, t.y, t.z, 1));
-    }
-
-    mat4 TI() {
-        return mat4(vec4(1 / s.x, 0, 0, 0),
+        TI = mat4(vec4(1 / s.x, 0, 0, 0),
             vec4(0, 1 / s.y, 0, 0),
             vec4(0, 0, 1 / s.z, 0),
             vec4(-(t.x / s.x), -(t.y / s.y), -(t.z / s.z), 1));
-    }
-
-    mat4 TIT() {
-        return mat4(
+        TIT = mat4(
             vec4(1 / s.x, 0, 0, -(t.x / s.x)),
             vec4(0, 1 / s.y, 0, -(t.y / s.y)),
             vec4(0, 0, 1 / s.z, -(t.z / s.z)),
-            vec4(0, 0, 0, 1)
-        );
+            vec4(0, 0, 0, 1));
+        TIQTIT = TI * Q * TIT;
     }
 
     vec3 gradf(vec4 r) {
-        vec4 g = r * TI() * Q() * TIT() * 2;
+        vec4 g = r * TIQTIT * 2;
         return vec3(g.x, g.y, g.z);
     }
 
@@ -490,9 +436,9 @@ public:
     Hit intersect(const Ray& ray) {
         Hit hit;
         vec3 dist = ray.start - center;
-        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
-        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TI() * Q() * TIT()), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
+        float a = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float b = dot(vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1)) + dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.dir.x, ray.dir.y, ray.dir.z, 0));
+        float c = dot(vec4(ray.start.x, ray.start.y, ray.start.z, 1) * (TIQTIT), vec4(ray.start.x, ray.start.y, ray.start.z, 1));
         float discr = b * b - 4.0f * a * c;
         if (discr < 0) return hit;
         float sqrt_discr = sqrtf(discr);
@@ -554,18 +500,18 @@ class Scene {
     std::vector<LightPoint*> lightPoints;
     Camera camera;
     vec3 La;
-    vec3 sky = vec3(5.0f,5.0f,10.0f);
-    vec3 sun = vec3(15.0f,15.0f,15.0f);
+    vec3 sky = vec3(5.0f, 5.0f, 10.0f);
+    vec3 sun = vec3(15.0f, 15.0f, 15.0f);
 public:
     void build() {
         vec3 eye = vec3(0.0f, 1.9f, 0.0f), vup = vec3(0.0f, 0.0f, 1.0f), lookat = vec3(0.0f, 0.0f, 0.2f);
-        
+
         float fov = 90 * M_PI / 180;
         camera.set(eye, lookat, vup, fov);
 
         La = vec3(0.15f, 0.15f, 0.15f);
 
-        vec3 lightDirection(3.0f,3.0f,3.0f), Le(2.0f, 2.0f, 2.0f);
+        vec3 lightDirection(3.0f, 3.0f, 3.0f), Le(2.0f, 2.0f, 2.0f);
         lights.push_back(new Light(lightDirection, Le));
 
         vec3 goldN(0.17f, 0.35f, 1.5f);
@@ -585,7 +531,7 @@ public:
 
 
         vec3 origo(0.0f, 0.0f, 0.97f);
-        while (lightPoints.size() < 2) {
+        while (lightPoints.size() < 150) {
             float randX = -0.48 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (0.48 - (-0.48))));
             float randY = -0.48 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (0.48 - (-0.48))));
 
@@ -596,12 +542,17 @@ public:
             }
         }
 
-        objects.push_back(new Room(vec3(0.0f, 0.0f, 0.0f), vec4(2.0f, 2.0f, 1.0f), vec3(1.0f,1.0f,1.0f), vec3(0.0f,0.0f,0.0f), roomRough));
+        objects.push_back(new Room(vec3(0.0f, 0.0f, 0.0f), vec4(2.0f, 2.0f, 1.0f), vec3(1.0f, 1.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), roomRough));
         objects.push_back(new LightTube(vec3(0.0f, 0.0f, 0.0f), vec4(1.3f, 1.3f, 1), vec3(0.15f, 0.15f, 0.15f), vec3(0, 0, -0.25f), silverMaterial));
+
+        objects.push_back(new Ellipsoid(vec3(0.0f, 0.0f, 0.0f), vec4(2.7f, 0.7f, 0.8f), vec3(0.3f, 0.3f, 0.3f), vec3(-0.4f, -0.6f, -0.7f), lightBlueRough));
+        objects.push_back(new Hiperboloid(vec3(0.0f, 0.0f, 0.0f), vec4(0.3f, 0.3f, 0.3f), vec3(0.32f, 0.32f, 0.32f), vec3(-0.6f, -1.5f, -0.3f), lightOrangeRough));
+        objects.push_back(new Paraboloid(vec3(0.0f, 0.0f, 0.0f), vec4(1.6f, 1.6f, 1), vec3(0.08f, 0.08f, 0.08f), vec3(1, -0.1f, 0), goldMaterial));
         
-        objects.push_back(new Ellipsoid(vec3(0.0f, 0.0f, 0.0f), vec4(2.7f, 0.7f, 0.8f), vec3(0.3f, 0.3f, 0.3f), vec3(-0.4f,-0.6f,-0.7f), lightBlueRough));
-        objects.push_back(new Hiperboloid(vec3(0.0f, 0.0f, 0.0f), vec4(0.3f, 0.3f, 0.3f), vec3(0.32f, 0.32f, 0.32f), vec3(-0.6f,-1.5f, -0.3f), lightOrangeRough));
-        objects.push_back(new Paraboloid(vec3(0.0f, 0.0f, 0.0f), vec4(1.6f, 1.6f, 1), vec3(0.08f, 0.08f, 0.08f), vec3(1,-0.1f,0), goldMaterial));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.7f, 0.7f, 0.7f), vec3(0.1f, 0.1f, 0.1f), vec3(-1.2f, 0.2f, -0.7f), lightOrangeRough));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.7f, 0.7f, 0.7f), vec3(0.1f, 0.1f, 0.1f), vec3(-1.1f, 0.3f, -0.75f), lightOrangeRough));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.7f, 0.7f, 0.7f), vec3(0.1f, 0.1f, 0.1f), vec3(-1.0f, 0.2f, -0.8f), lightBlueRough));
+        objects.push_back(new Ellipsoid(vec3(0, 0, 0), vec4(0.7f, 0.7f, 0.7f), vec3(0.1f, 0.1f, 0.1f), vec3(-0.5f, 0.4f, -0.9f), lightOrangeRough));
 
     }
 
@@ -634,11 +585,10 @@ public:
     }
 
     vec3 trace(Ray ray, int depth = 0) {
-        if (depth > 2) return La;
+        if (depth > 5) return La;
         Hit hit = firstIntersect(ray);
         vec3 sunDir = normalize(lights.at(0)->direction);
         if (hit.t < 0) {
-            vec3 sol = sky + sun * pow(dot(ray.dir, sunDir), 10);
             return (sky + sun * pow(dot(ray.dir, sunDir), 10));
         }
 
@@ -655,9 +605,9 @@ public:
                     vec3 lightDir = hit.position - lightPoint->pos;
 
 
-                    float dotProd = dot(-normalize(rayDir), vec3(0.0f,0.0f,-1.0f));
+                    float dotProd = dot(-normalize(rayDir), vec3(0.0f, 0.0f, -1.0f));
 
-                    float omega = (0.48f * 0.48f * M_PI) / lightPoints.size() * dotProd / (dot((lightPoint->pos - hit.position),(lightPoint->pos - hit.position)));
+                    float omega = (0.48f * 0.48f * M_PI) / lightPoints.size() * dotProd / (dot((lightPoint->pos - hit.position), (lightPoint->pos - hit.position)));
                     outRadiance = outRadiance + trace(Ray(hit.position + hit.normal * epsilon, normalize(rayDir)), depth + 1) * hit.material->kd * cosTheta * omega;
 
                     vec3 halfway = normalize(-ray.dir + lightPoint->pos);
@@ -755,19 +705,19 @@ void onInitialization() {
     scene.build();
 
     fullScreenTexturedQuad = new FullScreenTexturedQuad(windowWidth, windowHeight);
-    
-    gpuProgram.create(vertexSource, fragmentSource, "fragmentColor");
-}
-
-void onDisplay() {
     std::vector<vec4> image(windowWidth * windowHeight);
-    
+
     long timeStart = glutGet(GLUT_ELAPSED_TIME);
     scene.render(image);
     long timeEnd = glutGet(GLUT_ELAPSED_TIME);
     printf("\n\n\n\n Rendering time: %d milliseconds\n\n\n\n", (timeEnd - timeStart));
-    
+
     fullScreenTexturedQuad->LoadTexture(image);
+
+    gpuProgram.create(vertexSource, fragmentSource, "fragmentColor");
+}
+
+void onDisplay() {
     fullScreenTexturedQuad->Draw();
     glutSwapBuffers();
 }
